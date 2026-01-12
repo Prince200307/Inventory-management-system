@@ -1,2 +1,3 @@
 # Inventory-management-system
 This is a simple inventory management system.
+The program is structured around a dictionary that represents the inventory in memory. The dictionary has the product names as keys and the quantities as values (integers). The program starts by loading the inventory from a file (if it exists) into this dictionary. Then, it enters an infinite loop that presents a menu to the user and calls the appropriate function based on the user's choice. Each function that modifies the inventory will update the dictionary and then call save_inventory to write the entire dictionary to the file. This is a simple and effective way to ensure the file is always up-to-date.
