@@ -50,18 +50,18 @@ def setup_database():
            CREATE TABLE IF NOT EXISTS transactions (
                id INTEGER PRIMARY KEY AUTOINCREMENT,
                product_id INTEGER NOT NULL,
-               transaction_type TEXT NOT NULL, -- ADD, UPDATE, DELETE, ORDER
+               transaction_type TEXT NOT NULL,
                old_quantity INTEGER,
                new_quantity INTEGER,
                change_amount INTEGER,
                performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-               FOREIGN KEY (product_id) REFERENCES products(id)
-               ON DELETE CASCADE
+               FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             )
         ''')
         #create index for faster lookups
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_product_name ON products(product_name)''')
-        cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON transaction_log(product_id)''')
+        cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON transactions(product_id)''')
+        conn.commit()
 
 
 def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quantity):
