@@ -1,6 +1,6 @@
 Shampoo	18
 Soap	12
-Toothpaste	5
+Toothpaste	16
 Glitter	7
 Mustard-oil	20
 Notebook	50
