@@ -46,7 +46,7 @@ def setup_database():
         """)
         #create transaction log for audit trail
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS transactions (
+        CREATE TABLE IF NOT EXISTS inventory_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER NOT NULL,
             transaction_type TEXT NOT NULL,
@@ -62,14 +62,14 @@ def setup_database():
         """)
         #create index for faster lookups
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_product_name ON products(product_name)''')
-        cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON transactions(product_id)''')
+        cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON inventory_transactions(product_id)''')
 
 
 def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quantity):
     '''Log all inventory transactions for audit trail'''
     change_amount = new_quantity - old_quantity if old_quantity is not None else new_quantity
     cursor.execute('''
-        INSERT INTO transactions (product_id, transaction_type, old_quantity, new_quantity, change_amount)
+        INSERT INTO inventory_transactions (product_id, transaction_type, old_quantity, new_quantity, change_amount)
         VALUES (?, ?, ?, ?, ?)
     ''', (product_id, transaction_type, old_quantity, new_quantity, change_amount))
 
@@ -290,7 +290,7 @@ def view_transaction_log():
             cursor= conn.cursor()
             cursor.execute('''
                 SELECT t.id, p.product_name, t.transaction_type, t.old_quantity, t.new_quantity, t.change_amount, t.performed_at
-                FROM transactions t
+                FROM inventory_transactions t
                 JOIN products p ON t.product_id = p.id
                 ORDER BY t.performed_at DESC
                 LIMIT 50
