@@ -46,7 +46,7 @@ def setup_database():
         """)
         #create transaction log for audit trail
         cursor.execute("""
-        CREATE TABLE inventory_transactions (
+        CREATE TABLE IF NOT EXISTSinventory_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER NOT NULL
                 REFERENCES products(id)
@@ -72,7 +72,7 @@ def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quan
     ''', (product_id, transaction_type, old_quantity, new_quantity, change_amount))
 
 
-def print_tablular(headers, rows):
+def print_tabular(headers, rows):
     col_widths = [len(h) for h in headers]
 
     for row in rows:
@@ -312,7 +312,7 @@ def view_inventory():
 
             headers = ["Product", "Quantity", "Status", "Created At", "Updated At"]
 
-            print_tabular(table, headers)
+            print_tabular(headers, table)
 
     except Exception as e:
         print(f"Error: {e}")
@@ -354,7 +354,7 @@ def view_transaction_log():
 
             headers = ["ID", "Product", "Type", "Old Qty", "New Qty", "Change", "Time"]
 
-            print_tablular(table, headers)
+            print_tabular(headers, table)
 
     except Exception as e:
         print(f"Error: {e}")
