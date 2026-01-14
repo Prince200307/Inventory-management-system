@@ -72,6 +72,26 @@ def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quan
     ''', (product_id, transaction_type, old_quantity, new_quantity, change_amount))
 
 
+def print_tablular(headers, rows):
+    col_widths = [len(h) for h in headers]
+
+    for row in rows:
+        for i, col in enumerate(row):
+            col_widths[i] = max(col_widths[i], len(str(col)))
+
+    line = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
+    header_row = "|" + "|".join(f" {headers[i].ljust(col_widths[i])} " for i in range(len(headers))) + "|"
+
+    print(line)
+    print(header_row)
+    print(line)
+
+    for row in rows:
+        print("|" + "|".join(f" {str(row[i]).ljust(col_widths[i])} " for i in range(len(row))) + "|")
+
+    print(line)
+
+
 def get_integer_input(prompt):
     '''Helper function to get integer input from user'''
     while True:
@@ -260,47 +280,84 @@ def order_product():
 
 def view_inventory():
     '''View current inventory'''
-    print("Current Inventory:")
+    print("\n📦 Current Inventory\n")
+
     try:
         with get_db_connection() as conn:
-            cursor= conn.cursor()
-            cursor.execute('''SELECT product_name, quantity, created_at, updated_at,
-                           CASE WHEN quantity = 0 THEN 'Out of Stock'
-                                WHEN quantity < 5 THEN 'Low Stock'
-                                ELSE 'In Stock' END AS stock_status
-                           FROM products
-                           ORDER BY product_name''')
-            products= cursor.fetchall()
-            if not products:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT product_name,
+                       quantity,
+                       created_at,
+                       updated_at,
+                       CASE
+                           WHEN quantity = 0 THEN 'Out of Stock'
+                           WHEN quantity < 5 THEN 'Low Stock'
+                           ELSE 'In Stock'
+                       END AS stock_status
+                FROM products
+                ORDER BY product_name
+            """)
+
+            rows = cursor.fetchall()
+            if not rows:
                 print("Inventory is empty.")
                 return
-            for product in products:
-                print(f"Product: {product['product_name']}, Quantity: {product['quantity']}, Created At: {product['created_at']}, Updated At: {product['updated_at']}")
+
+            table = [
+                [r["product_name"], r["quantity"], r["stock_status"],
+                 r["created_at"], r["updated_at"]]
+                for r in rows
+            ]
+
+            headers = ["Product", "Quantity", "Status", "Created At", "Updated At"]
+
+            print_tabular(table, headers)
+
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
+
 
 
 def view_transaction_log():
     '''View transaction log'''
-    print("Transaction Log:")
+    print("\n🧾 Transaction Log (Last 50)\n")
+
     try:
         with get_db_connection() as conn:
-            cursor= conn.cursor()
-            cursor.execute('''
-                SELECT t.id, p.product_name, t.transaction_type, t.old_quantity, t.new_quantity, t.change_amount, t.performed_at
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT t.id,
+                       p.product_name,
+                       t.transaction_type,
+                       t.old_quantity,
+                       t.new_quantity,
+                       t.change_amount,
+                       t.performed_at
                 FROM inventory_transactions t
                 JOIN products p ON t.product_id = p.id
                 ORDER BY t.performed_at DESC
                 LIMIT 50
-            ''')
-            transactions= cursor.fetchall()
-            if not transactions:
+            """)
+
+            rows = cursor.fetchall()
+            if not rows:
                 print("No transactions found.")
                 return
-            for tx in transactions:
-                print(f"ID: {tx['id']}, Product: {tx['product_name']}, Type: {tx['transaction_type']}, Old Qty: {tx['old_quantity']}, New Qty: {tx['new_quantity']}, Change: {tx['change_amount']}, Performed At: {tx['performed_at']}")
+
+            table = [
+                [r["id"], r["product_name"], r["transaction_type"],
+                 r["old_quantity"], r["new_quantity"],
+                 r["change_amount"], r["performed_at"]]
+                for r in rows
+            ]
+
+            headers = ["ID", "Product", "Type", "Old Qty", "New Qty", "Change", "Time"]
+
+            print_tablular(table, headers)
+
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
 
 
 def backup_database():
