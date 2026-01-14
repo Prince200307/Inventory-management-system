@@ -46,7 +46,7 @@ def setup_database():
         """)
         #create transaction log for audit trail
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTSinventory_transactions (
+        CREATE TABLE IF NOT EXISTS inventory_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER NOT NULL
                 REFERENCES products(id)
