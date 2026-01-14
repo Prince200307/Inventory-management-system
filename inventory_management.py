@@ -11,7 +11,7 @@ def get_db_connection():
     conn= None
     try:
         conn= sqlite3.connect(DB_PATH)
-        conn.execute("PRAGMA foreign keys = ON") #Enable foreignkey constraints
+        conn.execute("PRAGMA foreign_keys = ON") #Enable foreignkey constraints
         conn.row_factory = sqlite3.Row #Return rows as dictionaries
         yield conn
         conn.commit() #Commit changes if no exceptions
@@ -46,18 +46,16 @@ def setup_database():
         """)
         #create transaction log for audit trail
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS inventory_transactions (
+        CREATE TABLE inventory_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL
+                REFERENCES products(id)
+                ON DELETE CASCADE,
             transaction_type TEXT NOT NULL,
             old_quantity INTEGER,
             new_quantity INTEGER,
             change_amount INTEGER,
-            performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_product
-                FOREIGN KEY (product_id)
-                REFERENCES products(id)
-                ON DELETE CASCADE
+            performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
         #create index for faster lookups
