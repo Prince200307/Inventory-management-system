@@ -39,8 +39,8 @@ def setup_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 product_name TEXT UNIQUE NOT NULL,
                 quantity INTEGER NOT NULL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 check (quantity >= 0)
             )
         ''')
@@ -61,7 +61,6 @@ def setup_database():
         #create index for faster lookups
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_product_name ON products(product_name)''')
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON transactions(product_id)''')
-        conn.commit()
 
 
 def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quantity):
@@ -118,9 +117,6 @@ def add_product():
                     continue
                 quantity = get_integer_input("Enter initial quantity: ")
 
-                # Use transaction
-                cursor.execute('BEGIN TRANSACTION')
-
                 # Insert new product
                 cursor.execute(
                     'INSERT INTO products (product_name, quantity) VALUES (?, ?)',
@@ -153,8 +149,6 @@ def update_product_quantity():
         with get_db_connection() as conn:
             cursor= conn.cursor()
 
-            #use transaction
-            cursor.execute('BEGIN TRANSACTION;')
 
             #Fetch existing product
             cursor.execute('''
@@ -193,9 +187,6 @@ def add_quantity_to_product():
         with get_db_connection() as conn:
             cursor= conn.cursor()
 
-            #use transaction
-            cursor.execute('BEGIN TRANSACTION;')
-
             #Fetch existing product
             cursor.execute('''
                 SELECT id, quantity FROM products WHERE product_name = ?
@@ -232,9 +223,6 @@ def order_product():
     try:
         with get_db_connection() as conn:
             cursor= conn.cursor()
-
-            #use transaction
-            cursor.execute('BEGIN TRANSACTION;')
 
             #Fetch existing product
             cursor.execute('''
@@ -276,7 +264,7 @@ def view_inventory():
     try:
         with get_db_connection() as conn:
             cursor= conn.cursor()
-            cursor.execute('''SELECT product_name, quantity, created_at, updated_at
+            cursor.execute('''SELECT product_name, quantity, created_at, updated_at,
                            CASE WHEN quantity = 0 THEN 'Out of Stock'
                                 WHEN quantity < 5 THEN 'Low Stock'
                                 ELSE 'In Stock' END AS stock_status
@@ -315,7 +303,7 @@ def view_transaction_log():
         print(f"An error occurred: {e}")
 
 
-def backup_database(backup_path):
+def backup_database():
     '''Backup the database to the specified path'''
     import shutil
     import datetime
@@ -331,10 +319,8 @@ def backup_database(backup_path):
         # Close any existing connections before backup
         shutil.copy2(DB_PATH, backup_path)
         print(f"Database backup created: {backup_path}")
-        return True
     except Exception as e:
         print(f"Error creating backup: {e}")
-        return False
 
 
 def main():
@@ -374,7 +360,7 @@ def main():
         elif choice == '6':
             view_transaction_log()
         elif choice == '7':
-            backup_database(None)
+            backup_database()
         elif choice == '8':
             print("Exiting Inventory Management System.")
             break
