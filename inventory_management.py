@@ -34,30 +34,32 @@ def setup_database():
         cursor= conn.cursor()
 
         #create tables with transaction logging
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                product_name TEXT UNIQUE NOT NULL,
-                quantity INTEGER NOT NULL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                check (quantity >= 0)
-            )
-        ''')
-
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT UNIQUE NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CHECK (quantity >= 0)
+        );
+        """)
         #create transaction log for audit trail
-        cursor.execute('''
-           CREATE TABLE IF NOT EXISTS transactions (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               product_id INTEGER NOT NULL,
-               transaction_type TEXT NOT NULL,
-               old_quantity INTEGER,
-               new_quantity INTEGER,
-               change_amount INTEGER,
-               performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-               FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-            )
-        ''')
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            transaction_type TEXT NOT NULL,
+            old_quantity INTEGER,
+            new_quantity INTEGER,
+            change_amount INTEGER,
+            performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_product
+                FOREIGN KEY (product_id)
+                REFERENCES products(id)
+                ON DELETE CASCADE
+        );
+        """)
         #create index for faster lookups
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_product_name ON products(product_name)''')
         cursor.execute('''CREATE INDEX IF NOT EXISTS idx_transaction_product ON transactions(product_id)''')
