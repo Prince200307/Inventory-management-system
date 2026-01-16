@@ -150,6 +150,10 @@ def add_product():
 
     while True:
         product_name = input("\nEnter product name (or 'quit' to stop): ").strip()
+        
+        if not product_name.isalnum():
+            print("Invalid name")
+            continue
 
         if product_name.lower() == 'quit':
             print("Returning to main menu...")
