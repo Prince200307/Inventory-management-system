@@ -1,13 +1,30 @@
-import os
-import sqlite3
-from contextlib import contextmanager
+import os              # Used for filesystem operations (paths, directories)
+import sqlite3         # Built-in SQLite database adapter for Python
+from contextlib import contextmanager  # Used to create a clean, safe context manager
 
-DB_FOLDER= "data"
+# Directory where the SQLite database file will be stored
+DB_FOLDER = "data"
+
+# Full database file path (OS-independent)
 DB_PATH = os.path.join(DB_FOLDER, "inventory.db")
 
 @contextmanager
 def get_db_connection():
-    '''Context manager for database connection'''
+    """
+    Context manager that provides a SQLite database connection.
+
+    Responsibilities:
+    - Open database connection
+    - Enable foreign key enforcement
+    - Commit transaction on success
+    - Rollback transaction on failure
+    - Always close the connection
+
+    This guarantees:
+    - Atomicity
+    - Consistency
+    - Proper resource cleanup
+    """
     conn= None
     try:
         conn= sqlite3.connect(DB_PATH)
@@ -25,8 +42,13 @@ def get_db_connection():
 
 
 def setup_database():
-    '''Set up the database schema and create necessary tables if they do not exist'''
+    """
+    Creates required database tables and indexes if they do not exist.
 
+    This function is idempotent:
+    - Safe to run multiple times
+    - Does not overwrite existing data
+    """
     if not os.path.exists(DB_FOLDER):
         os.makedirs(DB_FOLDER)
 
@@ -64,7 +86,13 @@ def setup_database():
 
 
 def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quantity):
-    '''Log all inventory transactions for audit trail'''
+    """
+    Records every inventory change for auditing and traceability.
+
+    The cursor is passed explicitly to ensure:
+    - Same transaction context
+    - Atomicity with the calling operation
+    """
     change_amount = new_quantity - old_quantity if old_quantity is not None else new_quantity
     cursor.execute('''
         INSERT INTO inventory_transactions (product_id, transaction_type, old_quantity, new_quantity, change_amount)
@@ -73,6 +101,11 @@ def log_transaction(cursor, product_id, transaction_type, old_quantity, new_quan
 
 
 def print_tabular(headers, rows):
+    """
+    Prints data in a clean ASCII table format.
+
+    Automatically adjusts column widths based on content.
+    """
     col_widths = [len(h) for h in headers]
 
     for row in rows:
@@ -106,7 +139,11 @@ def get_integer_input(prompt):
 
 
 def add_product():
-    """Add multiple new products to inventory with transaction"""
+    """Adds new products to inventory.
+
+    - Prevents duplicates
+    - Logs transaction
+    - Runs in a single transaction for data integrity"""
     print("\n--- Add Product ---")
     print("Enter 'quit' as product name to return to menu")
     print("-" * 40)
@@ -157,7 +194,19 @@ def add_product():
 
 
 def update_product_quantity():
-    '''Update the quantity of an existing product with transaction logging'''
+    """
+    Updates the quantity of an existing product to an absolute value.
+
+    Use case:
+    - Stock correction
+    - Manual inventory reconciliation
+    - Admin override
+
+    This operation:
+    - Runs inside a transaction
+    - validates product existence
+    - logs old and new quantities for audit
+    """
     print("Update Product Quantity")
     product_name= input("Enter product name: ").strip()
     if not product_name:
@@ -195,7 +244,19 @@ def update_product_quantity():
 
 
 def add_quantity_to_product():
-    '''Add quantity to an existing product with transaction logging'''
+    """
+    Increases the quantity of an existing product.
+
+    Use case:
+    - Receiving new stock
+    - Supplier restocking
+    - Warehouse replenishment
+
+    This operation:
+    - Reads current quantity
+    - Adds delta value
+    - Logs the inventory change
+    """
     print("Add Quantity to Product")
     product_name= input("Enter product name: ").strip()
     if not product_name:
@@ -233,7 +294,19 @@ def add_quantity_to_product():
 
 
 def order_product():
-    '''Order (reduce) quantity of an existing product with transaction logging'''
+    """
+    Decreases the quantity of an existing product.
+
+    Use case:
+    - Customer orders
+    - Stock dispatch
+    - Consumption tracking
+
+    This operation:
+    - Prevents negative inventory
+    - Ensures sufficient stock exists
+    - Logs the inventory deduction
+    """
     print("Order Product")
     product_name= input("Enter product name: ").strip()
     if not product_name:
@@ -361,7 +434,12 @@ def view_transaction_log():
 
 
 def backup_database():
-    '''Backup the database to the specified path'''
+    '''Backup the database to the specified path
+
+    Creates a timestamped backup of the SQLite database.
+
+    Uses shutil.copy2 to preserve file metadata.
+    '''
     import shutil
     import datetime
 
