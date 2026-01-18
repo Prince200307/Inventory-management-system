@@ -150,6 +150,7 @@ def get_product_by_id(product_id: int) -> Optional[Dict[str, Any]]:
             return dict(row)
         return None
 
+'''
 def get_product_by_name(product_name: str) -> Optional[Dict[str, Any]]:
     """
     Get a single product by name
@@ -165,6 +166,7 @@ def get_product_by_name(product_name: str) -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
         return None
+'''
 
 def update_product_quantity(product_id: int, new_quantity: int) -> Dict[str, Any]:
     """
@@ -349,7 +351,7 @@ def log_transaction(cursor, product_id: int, transaction_type: str,
         INSERT INTO inventory_transactions
         (product_id, transaction_type, old_quantity, new_quantity, change_amount)
         VALUES (?, ?, ?, ?, ?)
-    """, (product_id, transaction_type, old_quantity, new_quantity, change_amount))
+    """, (product_id, transaction_type, (old_quantity if old_quantity is not None else 0), new_quantity, change_amount))
 
 def get_all_transactions(limit: int = 50) -> List[Dict[str, Any]]:
     """

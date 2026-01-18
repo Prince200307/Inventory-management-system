@@ -492,6 +492,8 @@ async def search_products(
     try:
         all_products= database.get_all_products()
         filtered_products= []
+        if min_quantity > max_quantity and min_quantity is not None and max_quantity is not None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="min_quantity cannot be greater than max_quantity")
         for product in all_products:
             if name and name.lower() not in product['product_name'].lower():
                 continue
