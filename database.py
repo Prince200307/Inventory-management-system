@@ -73,8 +73,8 @@ def create_product(product_name: str, quantity: int) -> Dict[str, Any]:
     Create a new product with initial quantity
     Returns the created product with its ID
     """
-    if not product_name.isalnum():
-        raise ValueError("Product name must contain only letters and numbers")
+    # if not product_name.isalnum():
+    #     raise ValueError("Product name must contain only letters and numbers")
 
     if quantity < 0:
         raise ValueError("Quantity cannot be negative")
@@ -124,7 +124,7 @@ def get_all_products() -> List[Dict[str, Any]]:
                        ELSE 'In Stock'
                    END as stock_status
             FROM products
-            ORDER BY product_name
+            ORDER BY id DESC
         """)
 
         products = []
@@ -362,6 +362,7 @@ def get_all_transactions(limit: int = 50) -> List[Dict[str, Any]]:
         cursor.execute("""
             SELECT
                 t.id,
+                t.product_id,
                 p.product_name,
                 t.transaction_type,
                 t.old_quantity,
@@ -390,6 +391,7 @@ def get_transactions_by_product(product_id: int) -> List[Dict[str, Any]]:
         cursor.execute("""
             SELECT
                 t.id,
+                t.product_id,
                 p.product_name,
                 t.transaction_type,
                 t.old_quantity,

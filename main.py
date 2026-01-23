@@ -13,7 +13,6 @@ from datetime import datetime
 async def lifespan(app: FastAPI):
     """
     Lifespan context manager for startup and shutdown events
-    Replaces the deprecated @app.on_event("startup")
     """
     # Startup
     try:
@@ -37,6 +36,7 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan  # Add the lifespan context manager
 )
+
 #==================================Pydantic models ==================================
 
 """
@@ -44,16 +44,16 @@ Model for creating a new inventory item
 """
 class ProductCreate(BaseModel):
     model_config= ConfigDict(str_strip_whitespace=True)
-    product_name: str = Field(..., min_length=1, max_length=100, description="Name of the item (Aplha-numeric only)")
+    product_name: str = Field(..., min_length=1, max_length=100, pattern="^[a-zA-Z0-9 ]+$", description="Name of the item (Aplha-numeric only)")
     quantity: int = Field(..., ge=0, description="Initial quantity of the item (must be non-negative)")
 
-    @field_validator('product_name')
-    @classmethod
-    def validate_product_name(cls, v):
-        """Validate that product name is alphanumeric"""
-        if not v.isalnum():
-            raise ValueError('Product name must be alphanumeric')
-        return v
+    # @field_validator('product_name')
+    # @classmethod
+    # def validate_product_name(cls, v):
+    #     """Validate that product name is alphanumeric"""
+    #     if not v.isalnum():
+    #         raise ValueError('Product name must be alphanumeric')
+    #     return all(v.isalnum() or c.isspace() for c in v)
 
     @field_validator('quantity')
     @classmethod
@@ -93,7 +93,7 @@ class QuantityAdjust(BaseModel):
 
 class OrderItem(BaseModel):
     '''Model for ordering an inventory item'''
-    product_id: int = Field(..., ge=1, description="ID of the product to order")
+    #product_id: int = Field(..., ge=1, description="ID of the product to order")
     quantity: int = Field(..., ge=1, description="Quantity to order (must be positive)")
 
     @field_validator('quantity')
@@ -120,6 +120,7 @@ class TransactionResponse(BaseModel):
     Model for responding with transaction details
     '''
     id: int
+    product_id: int
     product_name: str
     transaction_type: str
     old_quantity: Optional[int] = None
@@ -185,7 +186,7 @@ async def health_check():
     try:
         # try to connect with the database
         with database.get_db_connection() as conn:
-            cursor= conn.cursor
+            cursor= conn.cursor()
             cursor.execute("SELECT 1")
             db_status= "healthy"
     except Exception as e:
@@ -384,13 +385,13 @@ async def delete_product(product_id: int):
         500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
-async def get_all_transactions(limit:int= Query(50, ge=1, le=1000, description="Maximum number of transactions to return")):
+async def get_all_transactions(limit:int= Query(50, ge=1, le=100, description="Maximum number of transactions to return")):
     '''
     Get recent inventory transactions
     - limit: Number of transactions to return (default: 50, max: 100)
     '''
     try:
-        transactions= database.get_all_transactions()
+        transactions= database.get_all_transactions(limit=limit)
         return transactions
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {str(e)}")
