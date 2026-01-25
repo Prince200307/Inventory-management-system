@@ -120,8 +120,8 @@ class TransactionResponse(BaseModel):
     Model for responding with transaction details
     '''
     id: int
-    product_id: int
-    product_name: str
+    product_id: Optional[int] = None  # Made optional for deleted products
+    product_name: str  # Will show "[DELETED PRODUCT]" for deleted products
     transaction_type: str
     old_quantity: Optional[int] = None
     new_quantity: int
@@ -143,20 +143,6 @@ class SearchParams(BaseModel):
     min_quantity: Optional[int] = Field(None, ge=0, description="Minimum quantity filter (must be non-negative)")
     max_quantity: Optional[int] = Field(None, ge=0, description="Maximum quantity filter (must be non-negative)")
     instock: Optional[bool] = Field(None, description="Filter for items in stock (True) or out of stock (False)")
-
-# #================================== Lifecycle Events ==================================
-
-# @app.on_event("startup")
-# async def startup_event():
-#     """
-#     Initialize the database connection on application startup
-#     """
-#     try:
-#         database.setup_database()
-#         print("Database connection established.")
-#     except Exception as e:
-#         print(f"Error connecting to the database: {e}")
-#         raise
 
 #================================== Application Routes ==================================
 
@@ -365,6 +351,7 @@ async def delete_product(product_id: int):
     '''
     Delete a product from the inventory by its ID
     returns a success message upon deletion
+    Note: Transactions for this product will be preserved with product_id set to NULL
     '''
     try:
         result= database.delete_product(product_id=product_id)
@@ -389,6 +376,7 @@ async def get_all_transactions(limit:int= Query(50, ge=1, le=100, description="M
     '''
     Get recent inventory transactions
     - limit: Number of transactions to return (default: 50, max: 100)
+    Note: Shows transactions even for deleted products (marked as "[DELETED PRODUCT]")
     '''
     try:
         transactions= database.get_all_transactions(limit=limit)
@@ -410,6 +398,7 @@ async def get_product_transactions(product_id: int):
     '''
     Get all transactions for a specific product by its ID
     returns a list of transactions related to the product
+    Note: Works even if the product has been deleted
     '''
     product= database.get_product_by_id(product_id=product_id)
     if product is None:
@@ -493,7 +482,7 @@ async def search_products(
     try:
         all_products= database.get_all_products()
         filtered_products= []
-        if min_quantity > max_quantity and min_quantity is not None and max_quantity is not None:
+        if min_quantity is not None and max_quantity is not None and min_quantity > max_quantity:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="min_quantity cannot be greater than max_quantity")
         for product in all_products:
             if name and name.lower() not in product['product_name'].lower():
